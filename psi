@@ -1,6 +1,0 @@
-git clone https://github.com/gihalvs/portal-psi01.git
-cd portal-psi01
-# copie index.html, styles.css, script.js e README.md para esta pasta
-git add .
-git commit -m "Semana 4: estrutura inicial do Portal Psi"
-git push origin main

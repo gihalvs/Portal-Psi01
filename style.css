@@ -1,0 +1,41 @@
+/* Portal Psi — estilos personalizados (o restante vem do Tailwind) */
+:root{--mist:#F2F7F6;--ink:#1C3336;--teal:#2D7D77;--line:#D5E3E1;--sos:#C23B32}
+html{scroll-behavior:smooth;scroll-padding-top:5rem}
+:focus-visible{outline:3px solid #E0A526;outline-offset:2px}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.5rem}
+.field{width:100%;border:1px solid var(--line);border-radius:10px;padding:.65rem .8rem;background:#fff;font:inherit}
+
+.btn,.btn-quiet,.sos{font-weight:700;border-radius:10px;padding:.7rem 1.1rem;cursor:pointer;transition:transform .15s,background .15s}
+.btn{background:var(--teal);color:#fff}.btn:hover{background:#246863}
+.btn-quiet{border:1px solid var(--line);background:#fff}.btn-quiet:hover{background:var(--mist)}
+.sos{background:var(--sos);color:#fff;border-radius:999px;padding:.55rem 1.1rem}
+.sos:hover{background:#a5302a}
+.btn:active,.sos:active{transform:scale(.98)}
+
+.mood{display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:.6rem .2rem;border:2px solid var(--line);
+  border-radius:12px;background:#fff;font-size:1.7rem;cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+.mood small{font-size:.68rem;font-weight:500}
+.mood[aria-pressed="true"]{border-color:var(--teal);background:#E3F2F0;transform:translateY(-2px)}
+
+.avatar{flex:none;width:5rem;height:5rem;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:1.1rem}
+img.avatar{object-fit:cover;background:#DCE9E7}
+
+.video{aspect-ratio:16/9;border-radius:10px;background:#DCE9E7;display:grid;place-items:center;color:var(--ink);font-weight:500}
+iframe.video,video.video{display:block;width:100%;border:0;background:#000}
+
+.modal{position:fixed;inset:0;z-index:50;background:rgba(28,51,54,.6);display:grid;place-items:center;padding:1rem;overflow-y:auto}
+.modal[hidden]{display:none}
+.modal-box{background:#fff;border-radius:16px;padding:1.75rem;max-width:26rem;width:100%;animation:abrir .2s ease-out}
+@keyframes abrir{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.toast{position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);z-index:60;max-width:min(92vw,28rem);
+  background:var(--ink);color:#fff;padding:.8rem 1.1rem;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast[hidden]{display:none}
+
+#tabela th{text-align:left;padding:.6rem .8rem;background:rgba(255,255,255,.08);white-space:nowrap}
+#tabela td{padding:.55rem .8rem;border-top:1px solid rgba(242,247,246,.12)}
+.tab{border:1px solid rgba(242,247,246,.3);border-radius:8px;padding:.35rem .8rem;font-size:.85rem;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--mist);color:var(--ink);font-weight:700}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

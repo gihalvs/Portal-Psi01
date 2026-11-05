@@ -1,0 +1,56 @@
+# Portal Psi
+
+Plataforma web de saúde mental que oferece apoio psicológico rápido, desburocratizado, humanizado e acessível a todas as classes sociais. O projeto busca reduzir barreiras de acesso à psicologia, combater o estigma e criar um ambiente seguro de acolhimento emocional.
+
+## Banco de dados (Semana 4)
+
+Modelo relacional normalizado, sem tabelas separadas para administradores: o perfil de acesso é unificado no campo `tipo_usuario`.
+
+| Tabela | Descrição |
+|---|---|
+| `usuario` | Autenticação e `tipo_usuario` (`paciente`, `atendente`, `administrador`) |
+| `paciente` | Dados do paciente; chave estrangeira `id_usuario` |
+| `especialista` | Nome, CRP, especialidade e foto dos psicólogos |
+| `agendamento` | Consultas entre paciente e especialista: data, hora e estado |
+| `registro_humor` | Sentimento, intensidade e notas diárias do paciente |
+
+## Funcionalidades
+
+- **SOS Crise:** botão fixo no topo que abre um modal com o CVV (188), SAMU (192) e orientação para o CAPS.
+- **Diário de humor:** escolha do sentimento por emoji, intensidade de 1 a 5 e observações.
+- **Especialistas:** listagem de profissionais com agendamento direto.
+- **Vídeos:** espaços para tutoriais e apresentação do modelo de atendimento.
+- **Simulador de banco de dados:** mostra, em tempo real, o estado de cada tabela.
+
+## Estrutura
+
+```
+index.html   estrutura, seções e modais
+styles.css   estilos personalizados
+script.js    lógica, DOM e simulador do banco
+img/         logos, favicon e fotos dos especialistas
+videos/      vídeos em MP4 (opcional)
+README.md    documentação
+```
+
+## Identidade visual
+
+O símbolo mostra dois perfis de rosto com o Ψ (psi) ao centro. Arquivos em `img/`: `simbolo-psi.png` (símbolo com fundo transparente), `logo-psi-escuro.svg` (símbolo + nome sobre azul-marinho), `logo-psi-claro.svg` (versão para fundos claros) e `favicon.png`. Cores do texto: azul-marinho `#1F2A3A` e prata `#DDE2E8`.
+
+## Como trocar fotos e vídeos
+
+**Fotos dos especialistas:** coloque as imagens na pasta `img/` com os nomes `marina-alves.jpg`, `rafael-nunes.jpg`, `helena-prado.jpg`, `camila-torres.jpg`, `andre-lima.jpg` e `beatriz-almeida.jpg` (quadradas, 400x400 px ou mais). Se a foto faltar, o site mostra as iniciais. Para mudar nomes ou adicionar profissionais, edite a função `seed()` em `script.js`.
+
+**Vídeos:** edite a lista `VIDEOS` no topo de `script.js`. Use `youtube` com o link ou o ID do vídeo, ou `arquivo` com o caminho de um MP4 dentro de `videos/`. Sem nenhum dos dois, aparece "Vídeo em breve".
+
+## Como executar
+
+Abra `index.html` no navegador (é preciso internet para carregar o Tailwind e as fontes). Não há etapa de build. Os dados do simulador ficam no `localStorage` do navegador.
+
+## Tecnologias
+
+HTML5, Tailwind CSS (via CDN), JavaScript.
+
+## Aviso
+
+Projeto acadêmico. Os perfis dos especialistas são de demonstração; antes de uso real, substitua por dados e fotos de profissionais que tenham autorizado a divulgação.

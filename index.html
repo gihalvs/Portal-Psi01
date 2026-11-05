@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal Psi · Apoio psicológico sem burocracia</title>
+<meta name="description" content="Plataforma de saúde mental com apoio psicológico rápido, humanizado e acessível a todas as classes sociais.">
+<meta name="theme-color" content="#1F2A3A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&family=Young+Serif&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: { ink:'#1C3336', mist:'#F2F7F6', teal:'#2D7D77', line:'#D5E3E1', sos:'#C23B32' },
+  fontFamily: { display:['"Young Serif"','Georgia','serif'], body:['Figtree','system-ui','sans-serif'] }
+} } };
+</script>
+<link rel="icon" type="image/png" href="img/favicon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="font-body text-ink bg-mist">
+<a href="#inicio" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded focus:bg-white focus:p-3">Pular para o conteúdo</a>
+
+<header class="sticky top-0 z-30 bg-mist/95 backdrop-blur border-b border-line">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <a href="#inicio" class="flex items-center gap-2 font-display text-2xl" aria-label="Portal Psi, início"><img src="img/simbolo-psi.png" alt="" width="44" height="44">Portal Psi</a>
+    <nav class="hidden md:flex gap-6 text-sm font-medium" aria-label="Principal">
+      <a href="#humor">Diário de humor</a><a href="#especialistas">Especialistas</a>
+      <a href="#videos">Vídeos</a><a href="#banco">Banco de dados</a>
+    </nav>
+    <button id="btn-sos" type="button" class="sos">SOS Crise</button>
+  </div>
+</header>
+
+<main id="inicio">
+  <!-- Hero: o próprio diário -->
+  <section id="humor" class="max-w-5xl mx-auto px-4 pt-12 pb-16 grid md:grid-cols-2 gap-10 items-start">
+    <div>
+      <h1 class="font-display text-4xl md:text-5xl leading-tight">Como você está agora?</h1>
+      <p class="mt-4 text-lg text-ink/80 max-w-md">Apoio psicológico rápido, sem fila e sem julgamento, para qualquer pessoa. Comece dizendo o que sente.</p>
+    </div>
+    <form id="form-humor" class="card" autocomplete="off">
+      <fieldset>
+        <legend class="font-bold mb-3">Sentimento predominante hoje</legend>
+        <div id="moods" class="grid grid-cols-5 gap-2"></div>
+      </fieldset>
+      <label class="block mt-5 font-bold" for="intensidade">Intensidade: <span id="int-val">3</span> de 5</label>
+      <input id="intensidade" type="range" min="1" max="5" value="3" class="w-full mt-2 accent-teal">
+      <label class="block mt-5 font-bold" for="notas">Quer registrar algo?</label>
+      <textarea id="notas" rows="3" class="field mt-2" placeholder="O que aconteceu hoje, o que pesou, o que ajudou…"></textarea>
+      <button class="btn mt-4 w-full" type="submit">Salvar no diário</button>
+      <p id="humor-msg" class="mt-3 text-sm min-h-5" role="status"></p>
+      <ul id="historico" class="mt-2 space-y-2 text-sm"></ul>
+      <p class="mt-4 text-xs text-ink/60">Seus registros ficam salvos apenas neste navegador.</p>
+    </form>
+  </section>
+
+  <section id="especialistas" class="bg-white border-y border-line">
+    <div class="max-w-5xl mx-auto px-4 py-16">
+      <h2 class="font-display text-3xl">Psicólogos disponíveis</h2>
+      <p class="mt-2 text-ink/70">Profissionais de psicologia. Perfis de demonstração do projeto.</p>
+      <div id="lista-esp" class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </div>
+  </section>
+
+  <section id="videos" class="max-w-5xl mx-auto px-4 py-16">
+    <h2 class="font-display text-3xl">Aprenda a usar o Portal</h2>
+    <div id="lista-videos" class="mt-8 grid md:grid-cols-2 gap-5"></div>
+  </section>
+
+  <section id="banco" class="bg-ink text-mist">
+    <div class="max-w-5xl mx-auto px-4 py-16">
+      <h2 class="font-display text-3xl">Simulador do banco de dados</h2>
+      <p class="mt-2 text-mist/70">Registre um humor ou agende uma consulta e veja as tabelas mudarem.</p>
+      <div id="tabs" class="mt-6 flex flex-wrap gap-2" role="group" aria-label="Tabelas do banco de dados"></div>
+      <div class="mt-4 overflow-x-auto rounded-lg border border-mist/20"><table id="tabela" class="w-full text-sm"></table></div>
+      <button id="btn-reset" type="button" class="mt-4 text-sm underline">Restaurar dados de exemplo</button>
+    </div>
+  </section>
+</main>
+
+<footer class="max-w-5xl mx-auto px-4 py-8 text-sm text-ink/70">
+  Portal Psi é um projeto acadêmico e não substitui atendimento clínico ou de emergência.
+</footer>
+
+<!-- Modal SOS -->
+<div id="modal-sos" class="modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="sos-t">
+    <h2 id="sos-t" class="font-display text-2xl">Você não está sozinho</h2>
+    <p class="mt-2">Se está em sofrimento agora, fale com alguém. A ligação é gratuita.</p>
+    <a href="tel:188" class="sos block text-center mt-5 text-lg">Ligar para o CVV: 188</a>
+    <ul class="mt-5 space-y-2 text-sm">
+      <li><strong>CVV:</strong> 188, 24 horas, ou chat em cvv.org.br</li>
+      <li><strong>SAMU:</strong> 192, para risco imediato à vida</li>
+      <li><strong>CAPS:</strong> procure o Centro de Atenção Psicossocial mais próximo</li>
+    </ul>
+    <button type="button" class="btn-quiet mt-6 w-full" data-close>Fechar</button>
+  </div>
+</div>
+
+<!-- Modal agendamento -->
+<div id="modal-ag" class="modal" hidden>
+  <form id="form-ag" class="modal-box" role="dialog" aria-modal="true" aria-labelledby="ag-t">
+    <h2 id="ag-t" class="font-display text-2xl">Agendar com <span id="ag-nome"></span></h2>
+    <label class="block mt-4 font-bold" for="ag-data">Data</label>
+    <input id="ag-data" type="date" required class="field mt-1">
+    <label class="block mt-4 font-bold" for="ag-hora">Horário</label>
+    <select id="ag-hora" class="field mt-1"><option>09:00</option><option>11:00</option><option>14:00</option><option>16:00</option><option>19:00</option></select>
+    <p id="ag-erro" class="mt-4 text-sm font-bold text-sos" role="alert"></p>
+    <button class="btn mt-4 w-full" type="submit">Confirmar agendamento</button>
+    <button type="button" class="btn-quiet mt-2 w-full" data-close>Cancelar</button>
+  </form>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="script.js"></script>
+</body>
+</html>
