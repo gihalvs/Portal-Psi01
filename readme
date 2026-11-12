@@ -9,7 +9,7 @@ Modelo relacional normalizado, sem tabelas separadas para administradores: o per
 | Tabela | Descrição |
 |---|---|
 | `usuario` | Autenticação e `tipo_usuario` (`paciente`, `atendente`, `administrador`) |
-| `paciente` | Dados do paciente; chave estrangeira `id_usuario` |
+| `paciente` | Dados do paciente (CPF, nascimento, renda, baixa renda); chave estrangeira `id_usuario` |
 | `especialista` | Nome, CRP, especialidade e foto dos psicólogos |
 | `agendamento` | Consultas entre paciente e especialista: data, hora e estado |
 | `registro_humor` | Sentimento, intensidade e notas diárias do paciente |
@@ -17,10 +17,20 @@ Modelo relacional normalizado, sem tabelas separadas para administradores: o per
 ## Funcionalidades
 
 - **SOS Crise:** botão fixo no topo que abre um modal com o CVV (188), SAMU (192) e orientação para o CAPS.
+- **Cadastro:** nome, CPF (com validação dos dígitos), data de nascimento e dados de renda. Para menores de 18 anos pede o nome do responsável.
 - **Diário de humor:** escolha do sentimento por emoji, intensidade de 1 a 5 e observações.
 - **Especialistas:** listagem de profissionais com agendamento direto.
 - **Vídeos:** espaços para tutoriais e apresentação do modelo de atendimento.
 - **Simulador de banco de dados:** mostra, em tempo real, o estado de cada tabela.
+
+## Verificação de baixa renda
+
+O cadastro pergunta a renda mensal total da família, quantas pessoas moram na casa, se a família está no CadÚnico, o NIS (opcional) e se recebe benefício social. O cálculo segue o critério do CadÚnico (Decreto 6.135/2007): a família é de baixa renda se a **renda por pessoa for de até meio salário mínimo** ou se a **renda total for de até três salários mínimos**. Quem recebe Bolsa Família ou BPC também é marcado como compatível.
+
+- O salário mínimo fica na constante `SALARIO_MINIMO` do `script.js` (R$ 1.621 em 2026). **Atualize todo ano.**
+- Os dados são autodeclarados. O resultado é preliminar e a situação fica `pendente` até um atendente conferir os documentos.
+- O CPF aparece mascarado no simulador do banco (`***.123.456-**`).
+- **Privacidade (LGPD):** CPF e renda são dados pessoais. Nesta demonstração ficam só no `localStorage` do navegador. Em uso real é preciso um servidor com criptografia, controle de acesso, consentimento registrado e política de retenção.
 
 ## Estrutura
 

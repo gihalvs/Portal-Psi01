@@ -1,7 +1,12 @@
 /* Portal Psi — lógica da aplicação e simulador de banco de dados */
 'use strict';
 
-const KEY = 'portalpsi-db-v7';
+const KEY = 'portalpsi-db-v8';
+const KEY_PAC = 'portalpsi-paciente';
+
+/* Salário mínimo vigente em 2026 (Decreto 12.797/2025). ATUALIZE todo ano:
+   o critério de baixa renda é calculado a partir dele. */
+const SALARIO_MINIMO = 1621;
 
 /* ===== CONFIGURAÇÃO DE VÍDEOS =====
    Preencha UM dos campos por vídeo:
@@ -22,7 +27,8 @@ const seed = () => ({
     {id:1, nome:'Ana Souza', email:'ana@exemplo.com', tipo_usuario:'paciente'},
     {id:2, nome:'Carlos Lima', email:'carlos@exemplo.com', tipo_usuario:'atendente'},
     {id:3, nome:'Admin Psi', email:'admin@exemplo.com', tipo_usuario:'administrador'}],
-  paciente: [{id:1, id_usuario:1, data_nascimento:'1998-04-12', telefone:'(41) 90000-0000'}],
+  paciente: [{id:1, id_usuario:1, cpf:'52998224725', data_nascimento:'1998-04-12', nome_responsavel:'', renda_familiar:2400, num_pessoas:3,
+    renda_per_capita:800, cadunico:'sim', nis:'', beneficio:'nenhum', baixa_renda:true, status_verificacao:'pendente'}],
   especialista: [
     {id:1, nome:'Dra. Marina Alves Souza', crp:'CRP 06/210987', especialidade:'Psicologia Clínica, TCC e Luto', foto:'img/marina-alves.jpg'},
     {id:2, nome:'Dr. Rafael Nunes Pereira', crp:'CRP 06/112345', especialidade:'Psicologia do Esporte e Análise do Comportamento Aplicada (ABA)', foto:'img/rafael-nunes.jpg'},
@@ -35,7 +41,7 @@ const seed = () => ({
 });
 
 /* ---------- Utilidades ---------- */
-let db, humor = null, espAtual = null, tabAtiva = 'usuario';
+let db, humor = null, espAtual = null, tabAtiva = 'usuario', pacienteId = 1;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nextId = t => Math.max(0, ...db[t].map(r => r.id)) + 1;
@@ -47,6 +53,31 @@ const ytId = v => {
   const m = t.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);
   return m ? m[1] : (/^[\w-]{11}$/.test(t) ? t : '');
 };
+
+const brl = n => Number(n).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const soDigitos = t => String(t).replace(/\D/g, '');
+const fmtCpf = d => {
+  d = d.slice(0, 11); let o = d.slice(0, 3);
+  if (d.length > 3) o += '.' + d.slice(3, 6);
+  if (d.length > 6) o += '.' + d.slice(6, 9);
+  if (d.length > 9) o += '-' + d.slice(9, 11);
+  return o;
+};
+const mascaraCpf = d => d.length === 11 ? `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**` : d;
+function cpfValido(c){
+  c = soDigitos(c);
+  if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+  const dv = n => { let t = 0; for (let i = 0; i < n; i++) t += +c[i] * (n + 1 - i); const r = (t * 10) % 11; return r === 10 ? 0 : r; };
+  return dv(9) === +c[9] && dv(10) === +c[10];
+}
+function idadeDe(iso){
+  const [y, m, d] = iso.split('-').map(Number), h = new Date();
+  let i = h.getFullYear() - y;
+  if (h.getMonth() + 1 < m || (h.getMonth() + 1 === m && h.getDate() < d)) i--;
+  return i;
+}
+function lerPaciente(){ try { return Number(localStorage.getItem(KEY_PAC)) || 1; } catch { return 1; } }
+function gravarPaciente(){ try { localStorage.setItem(KEY_PAC, String(pacienteId)); } catch { /* indisponível */ } }
 
 function load(){ try { db = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch { db = seed(); } }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(db)); } catch { /* armazenamento indisponível */ } }
@@ -78,11 +109,82 @@ $('#form-humor').addEventListener('submit', e => {
   e.preventDefault();
   const msg = $('#humor-msg');
   if (!humor){ msg.textContent = 'Escolha como você está antes de salvar.'; return; }
-  db.registro_humor.push({id:nextId('registro_humor'), id_paciente:1, sentimento:humor,
+  db.registro_humor.push({id:nextId('registro_humor'), id_paciente:pacienteId, sentimento:humor,
     intensidade:+$('#intensidade').value, notas:$('#notas').value.trim(), data:hoje()});
   save(); $('#notas').value = ''; humor = null; marcarHumor();
   msg.textContent = 'Registro salvo.';
   renderHistorico(); renderTabela();
+});
+
+/* ---------- Cadastro e verificação de baixa renda ----------
+   Critério (Decreto 6.135/2007, usado pelo CadÚnico): renda por pessoa de até
+   1/2 salário mínimo OU renda familiar total de até 3 salários mínimos.
+   Os dados são autodeclarados: o resultado é preliminar e fica "pendente"
+   até um atendente conferir os documentos. */
+function avaliarRenda(total, pessoas, beneficio){
+  const perCapita = total / pessoas;
+  const limitePessoa = SALARIO_MINIMO / 2, limiteTotal = SALARIO_MINIMO * 3;
+  const porPessoa = perCapita <= limitePessoa, porTotal = total <= limiteTotal;
+  const beneficiario = beneficio === 'bolsa_familia' || beneficio === 'bpc';
+  let motivo = '';
+  if (porPessoa) motivo = `a renda por pessoa (${brl(perCapita)}) está dentro do limite de ${brl(limitePessoa)}`;
+  else if (porTotal) motivo = `a renda total da família está dentro do limite de ${brl(limiteTotal)}`;
+  else if (beneficiario) motivo = 'a família recebe benefício social de renda';
+  return {perCapita, limitePessoa, baixa: porPessoa || porTotal || beneficiario, motivo};
+}
+function nomeDoPaciente(){
+  const p = db.paciente.find(x => x.id === pacienteId) || db.paciente[0];
+  return p ? (db.usuario.find(u => u.id === p.id_usuario)?.nome || '') : '';
+}
+function renderAtivo(){
+  const n = nomeDoPaciente();
+  $('#cad-ativo').textContent = n ? `Paciente ativo na demonstração: ${n}` : '';
+}
+$('#cad-nasc').max = hoje();
+$('#cad-cpf').addEventListener('input', e => e.target.value = fmtCpf(soDigitos(e.target.value)));
+$('#cad-nis').addEventListener('input', e => e.target.value = soDigitos(e.target.value).slice(0, 11));
+$('#cad-nasc').addEventListener('change', e => {
+  const menor = e.target.value && idadeDe(e.target.value) < 18;
+  $('#bloco-resp').hidden = !menor; $('#cad-resp').required = menor;
+});
+$('#form-cad').addEventListener('submit', e => {
+  e.preventDefault();
+  const erro = $('#cad-erro'), falha = m => { erro.textContent = m; };
+  const nome = $('#cad-nome').value.trim().replace(/\s+/g, ' '), cpf = soDigitos($('#cad-cpf').value);
+  const nasc = $('#cad-nasc').value, resp = $('#cad-resp').value.trim();
+  const renda = parseFloat($('#cad-renda').value), pessoas = parseInt($('#cad-pessoas').value, 10);
+  const nis = soDigitos($('#cad-nis').value), beneficio = $('#cad-beneficio').value;
+
+  if (nome.split(' ').length < 2) return falha('Informe nome e sobrenome.');
+  if (!cpfValido(cpf)) return falha('CPF inválido. Confira os números.');
+  if (db.paciente.some(p => p.cpf === cpf)) return falha('Já existe um cadastro com este CPF.');
+  if (!nasc || nasc > hoje() || idadeDe(nasc) > 120) return falha('Informe uma data de nascimento válida.');
+  const menor = idadeDe(nasc) < 18;
+  if (menor && resp.split(' ').length < 2) return falha('Informe o nome completo do responsável legal.');
+  if (!(renda >= 0)) return falha('Informe a renda mensal total da família (pode ser 0).');
+  if (!(pessoas >= 1 && pessoas <= 30)) return falha('Informe quantas pessoas moram na casa (de 1 a 30).');
+  if (nis && nis.length !== 11) return falha('O NIS tem 11 números. Deixe em branco se não souber.');
+  if (!$('#cad-consent').checked) return falha('Marque a concordância para continuar.');
+  erro.textContent = '';
+
+  const r = avaliarRenda(renda, pessoas, beneficio);
+  const idU = nextId('usuario'), idP = nextId('paciente');
+  db.usuario.push({id:idU, nome, email:$('#cad-email').value.trim(), tipo_usuario:'paciente'});
+  db.paciente.push({id:idP, id_usuario:idU, cpf, data_nascimento:nasc, nome_responsavel:menor ? resp : '',
+    renda_familiar:renda, num_pessoas:pessoas, renda_per_capita:Math.round(r.perCapita * 100) / 100,
+    cadunico:$('#cad-cadunico').value, nis, beneficio, baixa_renda:r.baixa, status_verificacao:'pendente'});
+  pacienteId = idP; gravarPaciente(); save();
+
+  const box = $('#cad-resultado');
+  box.innerHTML = `<h3 class="font-display text-2xl">Cadastro recebido, ${esc(nome.split(' ')[0])}.</h3>
+    <p class="mt-2">Renda por pessoa informada: <strong>${brl(r.perCapita)}</strong> (limite de baixa renda: ${brl(r.limitePessoa)}).</p>
+    <p class="mt-2"><strong>Resultado preliminar:</strong> ${r.baixa
+      ? `seu perfil é compatível com baixa renda, porque ${esc(r.motivo)}.`
+      : 'seu perfil não se enquadra nos critérios de baixa renda, mas você continua podendo agendar consultas.'}</p>
+    <p class="mt-2 text-sm text-ink/70">Situação: pendente. Um atendente vai confirmar suas informações antes de aplicar qualquer condição especial.</p>`;
+  box.hidden = false; box.focus();
+  e.target.reset(); $('#bloco-resp').hidden = true; $('#cad-resp').required = false;
+  renderAtivo(); renderTabela();
 });
 
 /* ---------- Especialistas e agendamento ---------- */
@@ -125,7 +227,7 @@ $('#form-ag').addEventListener('submit', e => {
   if (db.agendamento.some(a => a.id_especialista === espAtual.id && a.data === data && a.hora === hora && a.estado === 'agendado')){
     erro.textContent = 'Esse horário já está ocupado. Escolha outro.'; return;
   }
-  db.agendamento.push({id:nextId('agendamento'), id_paciente:1, id_especialista:espAtual.id, data, hora, estado:'agendado'});
+  db.agendamento.push({id:nextId('agendamento'), id_paciente:pacienteId, id_especialista:espAtual.id, data, hora, estado:'agendado'});
   save(); fecharTodos(); renderTabela();
   avisar(`Consulta agendada com ${espAtual.nome} em ${br(data)} às ${hora}.`);
 });
@@ -177,7 +279,7 @@ function renderTabela(){
   const legenda = `<caption class="sr-only">Registros da tabela ${esc(tabAtiva)}</caption>`;
   $('#tabela').innerHTML = rows.length
     ? `${legenda}<thead><tr>${cols.map(c => `<th scope="col">${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r =>
-        `<tr>${cols.map(c => `<td>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody>`
+        `<tr>${cols.map(c => `<td>${esc(c === 'cpf' ? mascaraCpf(r[c]) : r[c])}</td>`).join('')}</tr>`).join('')}</tbody>`
     : `${legenda}<tbody><tr><td>Tabela vazia. Registre um humor ou agende uma consulta.</td></tr></tbody>`;
 }
 $('#tabs').addEventListener('click', e => {
@@ -187,9 +289,10 @@ $('#tabs').addEventListener('click', e => {
 });
 $('#btn-reset').addEventListener('click', () => {
   if (!confirm('Apagar os registros criados e restaurar os dados de exemplo?')) return;
-  db = seed(); save(); humor = null; marcarHumor();
+  db = seed(); pacienteId = 1; gravarPaciente(); save(); humor = null; marcarHumor();
+  $('#cad-resultado').hidden = true; renderAtivo();
   renderEsp(); renderHistorico(); renderTabela(); avisar('Dados de exemplo restaurados.');
 });
 
 /* ---------- Início ---------- */
-load(); renderMoods(); renderEsp(); renderVideos(); renderHistorico(); renderTabela();
+load(); pacienteId = lerPaciente(); renderMoods(); renderEsp(); renderVideos(); renderHistorico(); renderTabela(); renderAtivo();
